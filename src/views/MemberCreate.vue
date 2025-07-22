@@ -4,8 +4,7 @@
             <v-col cols="12" sm="4" md="6">
                 <v-card>
                     <v-card-tile class="text-h5 text-center">회원가입</v-card-tile>
-                </v-card>
-                <v-card-text>
+                    <v-card-text>
                     <v-form @submit.prevent="memberCreate">
                         <v-text-field 
                             label="이름"
@@ -25,9 +24,10 @@
                             required
                         ></v-text-field>
                         <v-btn type="submit" color="primary" block>등록</v-btn>
-                        
+                    
                     </v-form>
                 </v-card-text> 
+                </v-card>
             </v-col>
         </v-row>
     </v-container>
@@ -51,7 +51,7 @@ export default {
                     password: this.password
                 }
 
-                await axios.post("http://localhost:8080/member/create", data);
+                await axios.post(`${process.env.VUE_APP_API_BASE_URL}/member/create`, data);
                 this.$router.push("/");
             }
         }
