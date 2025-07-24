@@ -11,8 +11,9 @@
                             <div 
                             v-for="(msg, index) in messages"
                             :key="index"
+                            :class="['chat-message', msg.senderEmail === this.senderEmail ? 'sent' : 'received']"
                             >
-                                {{ msg }}
+                                <strong>{{ msg.senderEmail }}: </strong> {{ msg.message }}
                             </div>
                         </div>
                         <v-text-field
@@ -41,17 +42,29 @@ import Stomp from 'webstomp-client';
                 messages: [],
                 newMessage: "",
                 stompClient: null,
-                token: ""
+                token: "",
+                senderEmail: null
             }
         },
         created() {
+            this.senderEmail = localStorage.getItem("email");
             this.connectWebSocket();
         },
+        // 사용자가 현재 라우트에서 다른 라우트로 이동하려고 할 때 호출되는 함수
+        beforeRouteLeave (to, from, next) {
+            this.disconnectWebSocket()
+            next();
+        },
+        // 화면을 완전히 꺼버렸을 때
         beforeUnmount() {
             this.disconnectWebSocket()
         },
         methods: {
             connectWebSocket() {
+
+                // 이미 연결이 되어 있으면 새로 연결객체를 만들지 않음
+                if(this.stompClient && this.stompClient.connected) return;
+
                 // sockJs는 websocket을 내장한 향상된 js 라이브러리. http 엔드포인트 사용.
                 const sockJs = new SockJS(`${process.env.VUE_APP_API_BASE_URL}/connect`)
                 this.stompClient = Stomp.over(sockJs);
@@ -63,7 +76,8 @@ import Stomp from 'webstomp-client';
                     () => {
                         this.stompClient.subscribe(`/topic/1`, (message) => {
                             console.log(message)
-                            this.messages.push(message.body);
+                            const parseMessage = JSON.parse(message.body);
+                            this.messages.push(parseMessage);
                             this.scrollToBottom();
                         })
                     }
@@ -72,7 +86,11 @@ import Stomp from 'webstomp-client';
 
             sendMessage() {
                 if(this.newMessage.trim() == "") return;
-                this.stompClient.send(`/publish/1`, this.newMessage);
+                const message = {
+                    senderEmail: this.senderEmail,
+                    message: this.newMessage
+                }
+                this.stompClient.send(`/publish/1`, JSON.stringify(message));
                 this.newMessage = ""
             },
 
@@ -84,11 +102,10 @@ import Stomp from 'webstomp-client';
             },
 
             disconnectWebSocket() {
-                // if(this.ws) {
-                    // this.ws.close();
-                    // console.log("disconnected!!");
-                    // this.ws = null;
-                // }
+                if(this.stompClient && this.stompClient.connected) {
+                    this.stompClient.unsubscribe(`/topic/1`);
+                    this.stompClient.disconnect();
+                }
             }
         }
     }
@@ -99,5 +116,17 @@ import Stomp from 'webstomp-client';
     overflow-y: auto;
     border: 1px solid #ddd;
     margin-bottom: 10px;
+}
+
+.chat-message {
+    margin-bottom: 10px;
+}
+
+.sent {
+    text-align: right;
+}
+
+.received {
+    text-align: left;
 }
 </style>
