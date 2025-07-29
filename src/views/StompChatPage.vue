@@ -85,7 +85,7 @@ import axios from 'axios';
                             const parseMessage = JSON.parse(message.body);
                             this.messages.push(parseMessage);
                             this.scrollToBottom();
-                        })
+                        }, {Authorization: `Bearer ${this.token}`})
                     }
                 )
             },
